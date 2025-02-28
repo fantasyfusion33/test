@@ -1,0 +1,1614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fantasy Draft Board</title>
+  <style>
+    /* Modern Professional Design */
+    :root {
+      --primary: #D2042D;
+      --dark: #0A0A0A;
+      --light: #FFFFFF;
+      --gray: #1A1A1A;
+      --glass: rgba(26, 26, 26, 0.8);
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--dark);
+      color: var(--light);
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    .countdown-clock {
+      position: fixed;
+      top: 40px;
+      left: calc(350px + 45px); /* Sidebar (350px) + 35px */
+      width: 75px;
+      font-size: 2rem;
+      font-weight: 600;
+      background: var(--glass);
+      padding: 12px 20px;
+      border-radius: 8px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      z-index: 100;
+    }
+
+    /* When the sidebar is collapsed, move the clock 35px from the left */
+    .sidebar.collapsed ~ .countdown-clock {
+     left: 45px;
+    }
+
+    .draft-header {
+      text-align: center;
+      margin-bottom: 2rem;
+      padding: 2rem 0;
+      background: linear-gradient(135deg, var(--dark) 0%, #1a1a1a 100%);
+      border-radius: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .draft-header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(45deg, rgba(210, 4, 45, 0.1) 0%, rgba(210, 4, 45, 0.05) 100%);
+    }
+
+    .current-player {
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: var(--light);
+      padding: 12px 24px;
+      background: var(--primary);
+      border-radius: 8px;
+      display: inline-block;
+      backdrop-filter: blur(10px);
+      margin: 1rem 0;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      text-align: center;
+    }
+
+    .current-player span {
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .current-player strong {
+      font-weight: 700;
+    }
+
+   /* Filters and Search Bar */
+.filters {
+  display: flex;
+  align-items: center;
+  gap: 20px; /* Ensures even spacing */
+  margin-bottom: 20px;
+  padding-left: 10px; /* Adds space from the left edge */
+}
+
+.search-bar {
+  position: relative;
+  flex: 1;
+  max-width: 200px;
+  min-width: 200px;
+  margin-left: 10px; /* Adds space between the search bar and left-most filter */
+}
+
+#teamSearch {
+  width: 80%;
+  padding: 8px 30px 8px 12px;
+  background: var(--gray);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: var(--light);
+  font-size: 14px;
+}
+
+.clear-search {
+  position: absolute;
+  right: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  padding: 0;
+  font-size: 1.2rem;
+}
+
+.clear-search:hover {
+  color: var(--primary);
+}
+
+.filters select {
+  padding: 10px 16px;
+  background: var(--gray);
+  color: var(--light);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+/* Ensures search bar and filters don't overlap */
+.filters select:first-child {
+  margin-right: 15px; /* Adds space between left-most filter and search bar */
+}
+
+.filters select:hover {
+  border-color: var(--primary);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .filters {
+    flex-direction: flexbox;
+    align-items: stretch;
+  }
+
+  .search-bar {
+    width: 75%;
+    margin: 0;
+  }
+
+  .filters select {
+    width: 75%;
+  }
+}
+
+    .team-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px;
+      margin-bottom: 2rem;
+    }
+
+    .team-card {
+      background: var(--glass);
+      padding: 20px;
+      border-radius: 12px;
+      position: relative;
+      transition: all 0.2s ease;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      cursor: pointer;
+      z-index: 200;
+    }
+
+.team-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+    .team-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    .team-card.NFL { border-left: 4px solid #8A2BE2; }
+    .team-card.NBA { border-left: 4px solid #FF69B4; }
+    .team-card.MLB { border-left: 4px solid #4169E1; }
+    .team-card.NHL { border-left: 4px solid #FFA500; }
+    .team-card.NCAAF { border-left: 4px solid #32CD32; }
+    .team-card.NCAAB { border-left: 4px solid #FFD700; }
+
+    .team-card h3 {
+      margin: 0 0 8px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--light);
+    }
+
+    .team-card p {
+      margin: 4px 0;
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .team-card button {
+      margin-top: 16px;
+      width: 100%;
+      padding: 10px;
+      background: var(--primary);
+      color: var(--light);
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .team-card button:disabled {
+      background: rgba(210, 4, 45, 0.3);
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
+    .team-card button:hover:not(:disabled) {
+      background: #B00326;
+      transform: translateY(-1px);
+    }
+
+    .flag {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 0.7rem;
+      font-weight: 500;
+      z-index: 1;
+      line-height: 1.2;
+      text-align: center;
+    }
+
+    .flag.in-season { background: rgba(0, 255, 0, 0.15); color: #00FF00; }
+    .flag.off-season { background: rgba(255, 0, 0, 0.15); color: #FF4444; }
+
+    .rosters {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+      margin-top: 2rem;
+    }
+
+    .roster {
+      background: var(--glass);
+      padding: 20px;
+      border-radius: 12px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      z-index: 100;
+    }
+
+    .roster h2 {
+      margin: 0 0 16px;
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--light);
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 12px;
+      border-radius: 6px;
+      z-index: 100;
+
+    }
+
+    .roster ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .roster li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 15px;
+      margin: 8px 0;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.03);
+    }
+    /* Add these styles to your CSS */
+    .roster li strong {
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: var(--light);
+      background: rgba(255, 255, 255, 0.1);
+      padding: 8px;
+      border-radius: 6px;
+      display: block;
+      margin: 8px 0;
+    }
+
+    .roster li:last-child {
+      border-bottom: none;
+    }
+
+    .roster li.NFL { border-left: 4px solid #8A2BE2; }
+    .roster li.NBA { border-left: 4px solid #FF69B4; }
+    .roster li.MLB { border-left: 4px solid #4169E1; }
+    .roster li.NHL { border-left: 4px solid #FFA500; }
+    .roster li.NCAAF { border-left: 4px solid #32CD32; }
+    .roster li.NCAAB { border-left: 4px solid #FFD700; }
+
+    .draft-pick-circle {
+      background: var(--primary);
+      color: var(--light);
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.9rem;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .draft-pick-circle.NFL { background: #8A2BE2; }
+    .draft-pick-circle.NBA { background: #FF69B4; }
+    .draft-pick-circle.MLB { background: #4169E1; }
+    .draft-pick-circle.NHL { background: #FFA500; }
+    .draft-pick-circle.NCAAF { background: #32CD32; }
+    .draft-pick-circle.NCAAB { background: #FFD700; }
+
+    .draft-status-bar {
+      height: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      margin: 20px 0;
+      position: relative;
+    }
+
+    .draft-progress {
+      height: 100%;
+      background: var(--primary);
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+
+    @keyframes pulse-glow {
+      0% { box-shadow: 0 0 0 0 rgba(210, 4, 45, 0.4); }
+      100% { box-shadow: 0 0 0 6px rgba(210, 4, 45, 0); }
+    }
+
+    .urgent {
+      animation: pulse-glow 1.5s infinite;
+    }
+
+.draft-complete {
+  margin: 0 !important; /* Remove default margins */
+  padding: 20px !important; /* Add padding for spacing */
+  width: 100% !important; /* Ensure full width */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--dark); /* Match the background color */
+}
+
+.draft-complete-container {
+  padding: 20px;
+  overflow-y: auto;
+  height: calc(100vh - 120px);
+  scrollbar-width: none; /* Firefox */
+}
+
+.draft-complete-container::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
+
+.final-rosters {
+  display: flex;
+  justify-content: center;
+  gap: 25px;
+  width: 100%;
+  max-width: 800px; /* Limit width for better readability */
+}
+
+.final-rosters .roster {
+  display: block; /* Change from flex to block */
+  width: 350px;
+  background: var(--glass);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.final-rosters .roster h2 {
+  text-align: center; /* Center the title */
+  margin-bottom: 20px; /* Add space below the title */
+}
+
+    /* Sidebar Styles */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 350px;
+      height: 100vh;
+      background: var(--glass);
+      backdrop-filter: blur(10px);
+      border-right: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 4px 0 12px rgba(0, 0, 0, 0.2);
+      transition: transform 0.3s ease;
+      z-index: 100;
+    }
+
+    .sidebar.collapsed {
+      transform: translateX(-100%);
+    }
+
+    .sidebar-toggle {
+      position: fixed;
+      top: 20px;
+      left: 350px;
+      background: var(--primary);
+      color: var(--light);
+      border: none;
+      padding: 10px;
+      border-radius: 0 6px 6px 0;
+      cursor: pointer;
+      transition: left 0.3s ease;
+      z-index: 100;
+    }
+
+    .sidebar.collapsed + .sidebar-toggle {
+      left: 0px;
+      transform: translateX(-100); /* Ensure button stays visible */
+    }
+
+    .sidebar-toggle .arrow {
+      font-size: 1.2rem;
+      transition: transform 0.3s ease;
+    }
+
+    .sidebar.collapsed .sidebar-toggle .arrow {
+      transform: rotate(180deg);
+    }
+
+    .team-selector {
+      padding: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .team-selector select {
+      width: 100%;
+      padding: 10px;
+      background: var(--gray);
+      color: var(--light);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+
+    .team-selector select:hover {
+      border-color: var(--primary);
+    }
+
+   .roster-container {
+     padding: 20px;
+     overflow-y: auto;
+     height: calc(100vh - 120px);
+     scrollbar-width: none; /* Firefox */
+   }
+
+   .roster-container::-webkit-scrollbar {
+     display: none; /* Chrome, Safari */
+   }
+
+
+    .roster {
+      display: none;
+    }
+
+    .roster.active {
+      display: block;
+    }
+
+    .main-content {
+      margin-left: 350px;
+      transition: margin-left 0.3s ease;
+    }
+
+    .sidebar.collapsed ~ .main-content {
+      margin-left: 0;
+    }
+.team-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primaryColor);
+  position: relative;
+  margin-right: 8px;
+}
+
+.team-icon i {
+  font-size: 20px; /* Adjust icon size */
+  color: var(--secondaryColor); /* Use secondary color for the icon */
+}
+/* MyTeam Box */
+#myTeamBox {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 275px;
+  height: 200px;
+  background: #333; /* Dark gray background */
+  padding: 16px;
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 300;
+  transition: transform 0.3s ease;
+}
+
+#myTeamContent h3 {
+  text-align: center; /* Center text horizontally */
+  display: flex;
+  align-items: center; /* Center text vertically */
+  justify-content: center; /* Center horizontally */
+  height: 50px; /* Adjust based on available space */
+  margin: 0; /* Remove default margins */
+}
+
+
+#myTeamBox.collapsed {
+  transform: translateX(calc(100% - 40px)); /* Collapse to the right */
+}
+
+#myTeamBox.collapsed #myTeamContent {
+  display: none; /* Hide content when collapsed */
+}
+
+#toggleMyTeam {
+  position: absolute;
+  top: 10px;
+  left: -38px;
+  background: #D2042D; /* Primary color */
+  color: #FFF;
+  border: none;
+  padding: 8px 12px; /* Wider padding for better click area */
+  border-radius: 6px 0 0 6px; /* Rounded corners on the left */
+  cursor: pointer;
+  font-size: 16px; /* Adjust arrow size */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#toggleMyTeam .arrow {
+  transition: transform 0.3s ease;
+}
+
+#myTeamBox.collapsed #toggleMyTeam .arrow {
+  transform: rotate(0deg); /* Arrow pointing left (◀) */
+}
+
+#myTeamBox:not(.collapsed) #toggleMyTeam .arrow {
+  transform: rotate(180deg); /* Arrow pointing right (▶) */
+}
+
+.sport-grid {
+  display: grid;
+  margin-top: -10px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+}
+
+.sport-slot h4 {
+  margin: 0 0 0px;
+  font-size: 14px;
+  color: #FFF;
+  text-align: center;
+}
+
+.sport-slot:nth-child(2n) { /* Selects every second item (right column) */
+  margin-top: 4px;
+}
+
+.slots {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+/* My Team Box Slots */
+.slot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1); /* Light gray for empty slots */
+  display: block;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s ease;
+  position: relative; /* For positioning */
+}
+
+/* Team Icons */
+.team-icon {
+  width: 32px; /* Ensure width matches slot size */
+  height: 32px; /* Ensure height matches slot size */
+  border-radius: 50%; /* Make it a perfect circle */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primaryColor); /* Use team's primary color */
+}
+
+.team-icon i {
+  font-size: 20px; /* Adjust icon size to fit inside the circle */
+  color: var(--secondaryColor); /* Use team's secondary color */
+}
+
+/* Filled Slot Styling */
+.slot.filled {
+  background: transparent; /* Remove gray background when filled */
+}
+
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  #myTeamBox {
+    transform: translateX(calc(100% - 40px)); /* Collapse by default on small screens */
+  }
+
+  #myTeamBox.collapsed {
+    transform: translateX(0); /* Expand when toggled */
+  }
+}
+
+/* Team Popup Styles */
+.team-popup {
+  display: none;
+  position: fixed;
+  background: var(--glass);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 16px;
+  backdrop-filter: blur(10px);
+  z-index: 300;
+  width: 150px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.team-popup-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.team-popup-body p {
+  margin: 4px 0;
+  font-size: 0.9rem;
+}
+
+  </style>
+</head>
+<body>
+<div class="main-content">
+<div id="myTeamBox" class="collapsed">
+  <button id="toggleMyTeam" onclick="toggleMyTeam()">
+    <span class="arrow">◀</span>
+  </button>
+  <div id="myTeamContent">
+    <div class="sport-grid">
+    <h3>Player 1's Team</h3>
+<div class="sport-slot" data-sport="NFL">
+  <h4>NFL</h4>
+  <div class="slots">
+    <div class="slot"></div>
+    <div class="slot"></div>
+  </div>
+</div>
+<div class="sport-slot" data-sport="NBA">
+  <h4>NBA</h4>
+  <div class="slots">
+    <div class="slot"></div>
+    <div class="slot"></div>
+  </div>
+</div>
+<div class="sport-slot" data-sport="MLB">
+  <h4>MLB</h4>
+  <div class="slots">
+    <div class="slot"></div>
+    <div class="slot"></div>
+  </div>
+</div>
+<div class="sport-slot" data-sport="NHL">
+  <h4>NHL</h4>
+  <div class="slots">
+    <div class="slot"></div>
+    <div class="slot"></div>
+  </div>
+</div>
+<div class="sport-slot" data-sport="NCAAF">
+  <h4>NCAA Football</h4>
+  <div class="slots">
+    <div class="slot"></div>
+    <div class="slot"></div>
+  </div>
+</div>
+<div class="sport-slot" data-sport="NCAAB">
+  <h4>NCAA Basketball</h4>
+  <div class="slots">
+    <div class="slot"></div>
+    <div class="slot"></div>
+  </div>
+</div>
+<div class="sport-slot" data-sport="Wildcard">
+  <h4>Wildcard</h4>
+  <div class="slots">
+    <div class="slot"></div>
+  </div>
+</div>
+    </div>
+  </div>
+</div>  <div class="draft-header">
+    <h1>Fantasy Fusion Draft</h1>
+    <div class="current-player" id="currentPlayerBox">
+      <span>On The Clock:</span> <strong>Player 1 - Round 1.1</strong>
+    </div>
+  </div>
+  <div class="draft-status-bar">
+    <div class="draft-progress" style="width: 0%"></div>
+  </div>
+  <div id="app">
+    <div class="filters">
+  <!-- Search Bar -->
+  <div class="search-bar">
+    <input type="text" id="teamSearch" placeholder="Search for teams...">
+    <button id="clearSearch" class="clear-search">&times;</button>
+  </div>
+  <!-- Sort By -->
+     <label>Sort By:</label>
+  <select id="sortBy">
+    <option value="championship_odds">Odds</option>
+    <option value="adp">ADP</option>
+    <option value="lastYearPoints">Prev. Pts</option>
+    <option value="championshipPct">% Odds</option> //calculated in database
+  </select>
+  <!-- Fliter By -->
+      <label>Filter:</label>
+      <select id="seasonFilter">
+        <option value="all">All</option>
+        <option value="in-season">In Season</option>
+        <option value="off-season">Off Season</option>
+      </select>
+      <select id="sportFilter">
+        <option value="all">All Sports</option>
+        <option value="NFL">NFL</option>
+        <option value="NBA">NBA</option>
+        <option value="MLB">MLB</option>
+        <option value="NHL">NHL</option>
+        <option value="NCAAF">NCAA Football</option>
+        <option value="NCAAB">NCAA Basketball</option>
+      </select>
+ <!-- Conference Filter -->
+  <select id="conferenceFilter" disabled>
+    <option value="all">All Conferences</option>
+  </select>
+    </div>
+</div>
+    <div class="team-list" id="teamList">
+      <!-- Teams will be dynamically inserted here -->
+    </div>
+  </div>
+</div>
+<!-- Sidebar -->
+<div class="sidebar" id="sidebar">
+  <div class="team-selector">
+    <select id="teamSelector" onchange="switchRoster(this.value)">
+      <option value="player1">Player 1</option>
+      <option value="player2">Player 2</option>
+    </select>
+  </div>
+  <div class="roster-container">
+    <div class="rosters">
+      <div class="roster" id="player1Roster">
+        <h2>Player 1 Roster</h2>
+        <ul id="player1Teams">
+          <li><strong>NFL</strong></li>
+          <li class="empty">Empty</li>
+          <li class="empty">Empty</li>
+          <li><strong>NBA</strong></li>
+          <li class="empty">Empty</li>
+          <li class="empty">Empty</li>
+          <li><strong>MLB</strong></li>
+          <li class="empty">Empty</li>
+          <li class="empty">Empty</li>
+          <li><strong>NHL</strong></li>
+          <li class="empty">Empty</li>
+          <li class="empty">Empty</li>
+          <li><strong>NCAA Football</strong></li>
+          <li class="empty">Empty</li>
+          <li class="empty">Empty</li>
+          <li><strong>NCAA Basketball</strong></li>
+          <li class="empty">Empty</li>
+          <li class="empty">Empty</li>
+        </ul>
+      </div>
+      <div class="roster" id="player2Roster">
+        <h2>Player 2 Roster</h2>
+        <ul id="player2Teams">
+          <li><strong>NFL</strong></li>
+          <li class="empty">Empty</li>
+          <li class="empty">Empty</li>
+          <li><strong>NBA</strong></li>
+          <li class="empty">Empty</li>
+          <li class="empty">Empty</li>
+          <li><strong>MLB</strong></li>
+          <li class="empty">Empty</li>
+          <li class="empty">Empty</li>
+          <li><strong>NHL</strong></li>
+          <li class="empty">Empty</li>
+          <li class="empty">Empty</li>
+          <li><strong>NCAA Football</strong></li>
+          <li class="empty">Empty</li>
+          <li class="empty">Empty</li>
+          <li><strong>NCAA Basketball</strong></li>
+          <li class="empty">Empty</li>
+          <li class="empty">Empty</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Sidebar Toggle Button -->
+<button class="sidebar-toggle" onclick="toggleSidebar()">
+  <span class="arrow">&#9664;</span>
+</button>  
+<div class="countdown-clock" id="countdownClock">02:00</div>
+
+<div id="teamPopup" class="team-popup">
+  <div class="team-popup-content">
+    <div class="team-popup-body">
+      <p><strong>ADP:</strong> <span id="popupTeamADP"></span></p>
+      <p><strong>Odds:</strong> +<span id="popupTeamOdds"></span></p>
+      <p><strong>Last Year's Points:</strong> <span id="popupTeamPoints"></span></p>
+      <p><strong>Championship %:</strong> <span id="popupTeamChampionshipPct"></span>%</p>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+<script>
+let DraftableTeams = []; // Global variable to hold teams data
+
+const getSportIcon = (team) => {
+  switch (team.sport) {
+    case "NBA":
+    case "NCAAB":
+      return `<i class="fa-solid fa-basketball" style="color: ${team.secondaryColor};"></i>`;
+    case "NFL":
+    case "NCAAF":
+      return `<i class="fa-solid fa-football" style="color: ${team.secondaryColor};"></i>`;
+    case "MLB":
+      return `<i class="fa-solid fa-baseball" style="color: ${team.secondaryColor};"></i>`;
+    case "NHL":
+      return `<i class="fa-solid fa-hockey-puck" style="color: ${team.secondaryColor};"></i>`;
+    default:
+      return "";
+  }
+};
+
+// Load and parse the CSV file
+Papa.parse("SportTeamDatabase_rows.csv", {
+  download: true,
+  header: true, // Use the first row as headers
+  dynamicTyping: true, // Automatically convert numbers and booleans
+  complete: function (results) {
+    // Update the global DraftableTeams variable
+    DraftableTeams = results.data || [];
+    console.log('Teams loaded from CSV:', DraftableTeams);
+
+    // Initial render
+    renderTeams();
+
+    // Add event listeners for filters
+    seasonFilter.addEventListener("change", renderTeams);
+    sportFilter.addEventListener("change", renderTeams);
+    teamSearch.addEventListener("input", () => {
+      searchQuery = teamSearch.value.trim().toLowerCase();
+      renderTeams();
+    });
+  },
+  error: function (error) {
+    console.error('Error loading CSV file:', error);
+  }
+});
+
+// Conference data
+const conferenceData = {
+  NFL: ["AFC", "NFC"],
+  NBA: ["Eastern", "Western"],
+  MLB: ["AL", "NL"],
+  NHL: ["Eastern", "Western"],
+  NCAAF: ["AAC", "ACC", "B12", "B10", "USA", "MAC", "MWC", "P12", "SEC", "Sun Belt", "Independents"],
+  NCAAB: ["AAC", "ACC", "B12", "B10", "USA", "MAC", "MWC", "P12", "SEC", "Sun Belt", "Independents", "A10", "Big East", "Big Sky", "Big South", "Big West", "Horizon", "Ivy", "MAAC", "Missouri Valley", "Northeast", "OVC", "Patriot", "SoCon", "Southland", "SWAC", "Summit", "WCC", "WAC"]
+};
+
+// DOM Elements
+const teamSearch = document.getElementById("teamSearch");
+const seasonFilter = document.getElementById("seasonFilter");
+const conferenceFilter = document.getElementById("conferenceFilter");
+const clearSearch = document.getElementById("clearSearch");
+const sportFilter = document.getElementById("sportFilter");
+const teamList = document.getElementById("teamList");
+const teamPopup = document.getElementById("teamPopup");
+
+// Initialize filters
+let searchQuery = "";
+let selectedConference = "all";
+
+// Search input handler with debouncing
+let searchTimeout;
+teamSearch.addEventListener("input", (e) => {
+  searchQuery = e.target.value.trim().toLowerCase();
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(renderTeams, 300);
+});
+
+// Clear search handler
+clearSearch.addEventListener("click", () => {
+  teamSearch.value = "";
+  searchQuery = "";
+  renderTeams();
+});
+
+// Sort teams function
+const sortTeams = (DraftableTeams, sortKey) => {
+  return DraftableTeams.sort((a, b) => {
+ // Handle "No Odds" or championshipPct = 0
+    const aHasOdds = a.championshipPct > 0;
+    const bHasOdds = b.championshipPct > 0;
+
+    // If one team has odds and the other doesn't, prioritize the one with odds
+    if (aHasOdds && !bHasOdds) return -1; // a comes first
+    if (!aHasOdds && bHasOdds) return 1; // b comes first   
+ // Map dropdown values to actual property names
+    const propMap = {
+      "championship_odds": "championship_odds",
+      "adp": "adp",
+      "lastYearPoints": "lastYearPoints",
+      "championshipPct": "championshipPct"
+    };
+    
+    const property = propMap[sortKey] || "championship_odds";
+    
+    // Handle undefined values by sorting them last
+    if (typeof a[property] === "undefined") return 1;
+    if (typeof b[property] === "undefined") return -1;
+
+    // Determine sort direction
+    const direction = property === "lastYearPoints" || property === "championshipPct" ? -1 : 1;
+    
+    return (a[property] - b[property]) * direction;
+  });
+};
+
+const renderTeams = () => {
+  // Guard clause: Ensure DraftableTeams is an array
+  if (!Array.isArray(DraftableTeams)) {
+    console.error("DraftableTeams is not an array");
+    return;
+  }
+
+  const filter = seasonFilter.value;
+  const sport = sportFilter.value;
+  const seasonYear = 2025; // Example draft year
+  const sortKey = sortBy.value || "championship_odds"; // Default to "Championship Odds"
+
+// Filter DraftableTeams based on the selected criteria
+const filteredTeams = DraftableTeams.filter(team => {
+  // Season filter
+  const currentSeasonStart = `${seasonYear - 1}-`; // "2024-"
+  const nextSeasonStart = `${seasonYear}-`; // "2025-"
+  const isCurrentSeason = String(team.season_year || "").startsWith(currentSeasonStart);
+  const isNextSeason = String(team.season_year || "").startsWith(nextSeasonStart);
+    
+    let seasonMatch = true;
+    if (filter === "in-season") seasonMatch = isCurrentSeason;
+    if (filter === "off-season") seasonMatch = isNextSeason;
+
+    // Sport filter
+    const matchesSport = sport === "all" || team.sport === sport;
+    
+    // Conference filter
+    const matchesConference = selectedConference === "all" || 
+      (team.conference || team.league) === selectedConference;
+    
+    // Search filter
+    const matchesSearch = team.name.toLowerCase().includes(searchQuery);
+
+    return seasonMatch && matchesSport && matchesConference && matchesSearch;
+  });
+
+  // Sort and render teams
+  const sortedTeams = sortTeams(filteredTeams, sortKey);
+  renderTeamList(sortedTeams, sortKey);
+};
+
+// Sport filter change handler (for conference filter)
+sportFilter.addEventListener("change", () => {
+  const sport = sportFilter.value;
+  conferenceFilter.innerHTML = '<option value="all">All Conferences</option>';
+  
+  if (sport !== "all") {
+    conferenceFilter.disabled = false;
+    conferenceData[sport].forEach(conf => {
+      const option = document.createElement("option");
+      option.value = conf;
+      option.textContent = conf;
+      conferenceFilter.appendChild(option);
+    });
+  } else {
+    conferenceFilter.disabled = true;
+    conferenceFilter.value = "all";
+  }
+  
+  selectedConference = "all";
+  renderTeams();
+});
+
+// Conference filter change handler
+conferenceFilter.addEventListener("change", () => {
+  selectedConference = conferenceFilter.value;
+  renderTeams();
+});
+
+
+
+// Render team list
+const renderTeamList = (DraftableTeams, sortKey) => {
+  const fragment = document.createDocumentFragment();
+  
+  DraftableTeams.forEach(team => {
+    const teamCard = createTeamCard(team, sortKey);
+    fragment.appendChild(teamCard);
+  });
+
+  teamList.innerHTML = "";
+  teamList.appendChild(fragment);
+};
+
+// Create team card
+const createTeamCard = (team, sortKey) => {
+  const teamCard = document.createElement("div");
+  teamCard.className = `team-card ${team.sport}`;
+  teamCard.dataset.teamId = team.team_id;
+  
+  teamCard.innerHTML = `
+    <div class="flag ${String(team.season_year || "").startsWith("2024") ? 'in-season' : 'off-season'}">
+  ${String(team.season_year || "").startsWith("2024") ? 'In Season' : 'Off Season'}
+    </div>
+    <div class="team-card-header">
+      <div class="team-icon ${team.sport}" 
+           style="--primaryColor: ${team.primaryColor}; 
+                  --secondaryColor: ${team.secondaryColor};"> 
+        ${getSportIcon(team)}
+      </div>
+      <h3>${team.name}</h3>
+    </div>
+    <p>${team.sport} (${team.season_year})</p>
+    <p>${team.conference || team.league} ${team.division ? `${team.division}` : ''}</p>
+    <p>${getDynamicInfo(team, sortKey)}</p>
+    <button onclick="draftTeam('${team.team_id}')">Draft</button>
+  `;
+
+  // Add event listeners for popups
+  teamCard.addEventListener("mouseenter", handleTeamHover);
+  teamCard.addEventListener("mouseleave", handleTeamLeave);
+  
+  return teamCard;
+};
+
+// Get dynamic info for team card
+const getDynamicInfo = (team, sortKey) => {
+  const formats = {
+    championship_odds: v => `Odds: +${v}`,
+    adp: v => `ADP: ${v}`,
+    lastYearPoints: v => `Prev: ${v} Pts`,
+    championshipPct: v => `% Odds: ${v.toFixed(1)}%`
+  };
+  
+  const value = team[sortKey] ?? 0;
+  const formatter = formats[sortKey] || formats.championship_odds;
+  return formatter(value);
+};
+
+// Team popup handlers
+let popupTimeout;
+const handleTeamHover = (e) => {
+  clearTimeout(popupTimeout);
+  const teamCard = e.currentTarget;
+  const teamId = teamCard.dataset.teamId;
+  const team = DraftableTeams.find(t => t.team_id === teamId);
+  
+  if (team) {
+    positionPopup(e, team);
+    teamPopup.style.display = "block";
+  }
+};
+
+const handleTeamLeave = () => {
+  popupTimeout = setTimeout(() => {
+    teamPopup.style.display = "none";
+  }, 200);
+};
+
+// Position popup
+const positionPopup = (e, team) => {
+  const { clientX, clientY } = e;
+  const popupWidth = teamPopup.offsetWidth;
+  const popupHeight = teamPopup.offsetHeight;
+  
+  // Prevent overflow
+  let left = clientX + 20;
+  let top = clientY - 50;
+  
+  if (left + popupWidth > window.innerWidth) {
+    left = window.innerWidth - popupWidth - 10;
+  }
+  
+  if (top + popupHeight > window.innerHeight) {
+    top = window.innerHeight - popupHeight - 10;
+  }
+  
+  teamPopup.style.left = `${left}px`;
+  teamPopup.style.top = `${top}px`;
+
+  // Populate popup data
+  document.getElementById("popupTeamADP").textContent = team.adp;
+  document.getElementById("popupTeamOdds").textContent = team.championship_odds;
+  document.getElementById("popupTeamPoints").textContent = team.lastYearPoints;
+  document.getElementById("popupTeamChampionshipPct").textContent = team.championshipPct;
+};
+
+// Add event listener for sortBy dropdown
+const sortBy = document.getElementById("sortBy");
+sortBy.addEventListener("change", renderTeams);
+
+
+// Initial render
+renderTeams();
+
+// Draft state
+let currentPlayer = 1; // 1 or 2
+let currentRound = 1;
+let currentPick = 1;
+let totalPicks = 0; // Track total picks
+const playerRosters = {
+  1: { NFL: [], NBA: [], MLB: [], NHL: [], NCAAF: [], NCAAB: [] },
+  2: { NFL: [], NBA: [], MLB: [], NHL: [], NCAAF: [], NCAAB: [] }
+};
+
+// Countdown state
+let countdownTime = 120; // 2 minutes in seconds
+let countdownInterval;
+
+// Start the countdown
+const startCountdown = () => {
+  countdownInterval = setInterval(() => {
+    countdownTime--;
+    const minutes = Math.floor(countdownTime / 60);
+    const seconds = countdownTime % 60;
+    countdownClock.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+    if (countdownTime <= 0) {
+      clearInterval(countdownInterval);
+      autoDraftTeam();
+    }
+  }, 1000);
+};
+
+// Auto-draft the team with the lowest odds
+const autoDraftTeam = () => {
+  const sortedTeams = DraftableTeams.sort((a, b) => a.championship_odds - b.championship_odds);
+  const team = sortedTeams.find(team => playerRosters[currentPlayer][team.sport].length < 2) || sortedTeams[0];
+  if (team) draftTeam(team.team_id);
+};
+
+// Draft a team
+const draftTeam = (teamId) => {
+  const team = DraftableTeams.find(t => t.team_id === teamId);
+  if (!team) return;
+
+  // Prevent drafting if the player has already filled this sport (except in wildcard round)
+  if (currentRound <= 12 && playerRosters[currentPlayer][team.sport].length >= 2) {
+    alert(`You've already drafted 2 ${team.sport} teams!`);
+    return;
+  }
+
+  // Add team to the current player's roster
+  if (currentRound <= 12) {
+    playerRosters[currentPlayer][team.sport].push({ ...team, round: currentRound, pick: currentPick });
+  } else {
+    // Wildcard round: add to a special "wildcard" section
+    if (!playerRosters[currentPlayer].wildcard) playerRosters[currentPlayer].wildcard = [];
+    playerRosters[currentPlayer].wildcard.push({ ...team, round: currentRound, pick: currentPick });
+  }
+
+  // Update the sidebar and My Team Box
+  renderRosters();
+  if (currentPlayer === 1) updateMyTeamBox(team);
+
+  // Remove team from the draft pool
+  DraftableTeams = DraftableTeams.filter(t => t.team_id !== teamId);
+
+  // Render updated teams
+  renderTeams(DraftableTeams);
+
+  // Increment total picks
+  totalPicks++;
+
+  // Update draft progress bar
+  document.querySelector('.draft-progress').style.width = `${(totalPicks / 26) * 100}%`;
+
+  // Reset the countdown
+  clearInterval(countdownInterval);
+  countdownTime = 120;
+  startCountdown();
+
+  // Update round and pick
+  if (currentRound <= 12) {
+    if (currentRound % 2 === 1) {
+      // Odd rounds: Player 1 → Player 2
+      if (currentPlayer === 1 && currentPick === 1) {
+        currentPick = 2;
+      } else if (currentPlayer === 2 && currentPick === 2) {
+        currentRound++;
+        currentPick = 1;
+      }
+    } else {
+      // Even rounds: Player 2 → Player 1
+      if (currentPlayer === 2 && currentPick === 1) {
+        currentPick = 2;
+      } else if (currentPlayer === 1 && currentPick === 2) {
+        currentRound++;
+        currentPick = 1;
+      }
+    }
+  } else {
+    // Wildcard round: alternate picks
+    if (currentRound % 2 === 1) {
+      // Odd rounds: Player 1 → Player 2
+      if (currentPlayer === 1 && currentPick === 1) {
+        currentPick = 2;
+      } else if (currentPlayer === 2 && currentPick === 2) {
+        currentRound++;
+        currentPick = 1;
+      }
+    } else {
+      // Even rounds: Player 2 → Player 1
+      if (currentPlayer === 2 && currentPick === 1) {
+        currentPick = 2;
+      } else if (currentPlayer === 1 && currentPick === 2) {
+        currentRound++;
+        currentPick = 1;
+      }
+    }
+  }
+
+  // Switch to the next player
+  if (currentRound % 2 === 1) {
+    // Odd rounds: Player 1 → Player 2
+    currentPlayer = currentPick === 1 ? 1 : 2;
+  } else {
+    // Even rounds: Player 2 → Player 1
+    currentPlayer = currentPick === 1 ? 2 : 1;
+  }
+
+  // Update the "On The Clock" display
+  currentPlayerBox.innerHTML = `<span>On The Clock:</span> <strong>Player ${currentPlayer} - Pick ${currentRound}.${currentPick}</strong>`;
+
+  // Update sidebar to show the current drafting team
+  updateSidebar(currentPlayer);
+
+  // Check if main draft is complete (24 picks)
+  if (totalPicks === 24) {
+    startWildcard(); // Start the wildcard round
+  }
+
+  // Check if draft is complete (26 picks)
+  if (totalPicks >= 26) {
+    endDraft();
+  }
+};
+
+// Start the wildcard round
+const startWildcard = () => {
+  // Notify players about the wildcard round
+  alert("You have made it to the Wild Card round! You will now draft 1 final team that can be from any sport. Choose wisely or take a gamble!");
+
+  // Update the draft state for the wildcard round
+  currentRound = 13; // Wildcard round
+  currentPick = 1;
+
+  // Switch to the next player
+  if (currentRound % 2 === 1) {
+    // Odd rounds: Player 1 → Player 2
+    currentPlayer = currentPick === 1 ? 1 : 2;
+  } else {
+    // Even rounds: Player 2 → Player 1
+    currentPlayer = currentPick === 1 ? 2 : 1;
+  }
+
+  // Update the "On The Clock" display
+  currentPlayerBox.innerHTML = `<span>On The Clock:</span> <strong>Player ${currentPlayer} - Pick ${currentRound}.${currentPick}</strong>`;
+
+  // Render teams for the wildcard round
+  renderTeams(DraftableTeams);
+};
+
+// Update the sidebar to show the current drafting team
+const updateSidebar = (currentPlayer) => {
+  const teamSelector = document.getElementById("teamSelector");
+  teamSelector.value = `player${currentPlayer}`;
+  switchRoster(`player${currentPlayer}`);
+};
+
+// Toggle sidebar collapse/expand
+const toggleSidebar = () => {
+  const sidebar = document.getElementById("sidebar");
+  sidebar.classList.toggle("collapsed");
+
+  // Adjust main content width
+  const mainContent = document.querySelector(".main-content");
+  mainContent.style.marginLeft = sidebar.classList.contains("collapsed") ? "0" : "350px";
+
+  // Change arrow direction
+  const arrow = document.querySelector(".sidebar-toggle .arrow");
+  if (sidebar.classList.contains("collapsed")) {
+    arrow.innerHTML = "&#9654;"; // Right arrow
+  } else {
+    arrow.innerHTML = "&#9664;"; // Left arrow
+  }
+};
+
+// Switch between rosters
+const switchRoster = (team) => {
+  const rosters = document.querySelectorAll(".roster");
+  rosters.forEach(roster => roster.style.display = "none");
+  document.getElementById(`${team}Roster`).style.display = "block";
+};
+
+// Render rosters
+const renderRosters = () => {
+  const renderRoster = (roster, element) => {
+    element.innerHTML = `
+      <strong>NFL</strong>
+      ${roster.NFL.map(team => `
+        <li class="${team.sport}">
+          <div class="team-icon ${team.sport}" style="--primaryColor: ${team.primaryColor}; --secondaryColor: ${team.secondaryColor};">
+            ${getSportIcon(team)}
+          </div>
+          ${team.name} 
+          <div class="draft-pick-circle ${team.sport}">
+            ${team.round}.${team.pick}
+          </div>
+        </li>
+      `).join("")}
+      ${Array(2 - roster.NFL.length).fill('<li class="empty">Empty</li>').join("")}
+      <strong>NBA</strong>
+      ${roster.NBA.map(team => `
+        <li class="${team.sport}">
+          <div class="team-icon ${team.sport}" style="--primaryColor: ${team.primaryColor}; --secondaryColor: ${team.secondaryColor};">
+            ${getSportIcon(team)}
+          </div>
+          ${team.name} 
+          <div class="draft-pick-circle ${team.sport}">
+            ${team.round}.${team.pick}
+          </div>
+        </li>
+      `).join("")}
+      ${Array(2 - roster.NBA.length).fill('<li class="empty">Empty</li>').join("")}
+      <strong>MLB</strong>
+      ${roster.MLB.map(team => `
+        <li class="${team.sport}">
+          <div class="team-icon ${team.sport}" style="--primaryColor: ${team.primaryColor}; --secondaryColor: ${team.secondaryColor};">
+            ${getSportIcon(team)}
+          </div>
+          ${team.name} 
+          <div class="draft-pick-circle ${team.sport}">
+            ${team.round}.${team.pick}
+          </div>
+        </li>
+      `).join("")}
+      ${Array(2 - roster.MLB.length).fill('<li class="empty">Empty</li>').join("")}
+      <strong>NHL</strong>
+      ${roster.NHL.map(team => `
+        <li class="${team.sport}">
+          <div class="team-icon ${team.sport}" style="--primaryColor: ${team.primaryColor}; --secondaryColor: ${team.secondaryColor};">
+            ${getSportIcon(team)}
+          </div>
+          ${team.name} 
+          <div class="draft-pick-circle ${team.sport}">
+            ${team.round}.${team.pick}
+          </div>
+        </li>
+      `).join("")}
+      ${Array(2 - roster.NHL.length).fill('<li class="empty">Empty</li>').join("")}
+      <strong>NCAA Football</strong>
+      ${roster.NCAAF.map(team => `
+        <li class="${team.sport}">
+          <div class="team-icon ${team.sport}" style="--primaryColor: ${team.primaryColor}; --secondaryColor: ${team.secondaryColor};">
+            ${getSportIcon(team)}
+          </div>
+          ${team.name} 
+          <div class="draft-pick-circle ${team.sport}">
+            ${team.round}.${team.pick}
+          </div>
+        </li>
+      `).join("")}
+      ${Array(2 - roster.NCAAF.length).fill('<li class="empty">Empty</li>').join("")}
+      <strong>NCAA Basketball</strong>
+      ${roster.NCAAB.map(team => `
+        <li class="${team.sport}">
+          <div class="team-icon ${team.sport}" style="--primaryColor: ${team.primaryColor}; --secondaryColor: ${team.secondaryColor};">
+            ${getSportIcon(team)}
+          </div>
+          ${team.name} 
+          <div class="draft-pick-circle ${team.sport}">
+            ${team.round}.${team.pick}
+          </div>
+        </li>
+      `).join("")}
+      ${Array(2 - roster.NCAAB.length).fill('<li class="empty">Empty</li>').join("")}
+      <strong>Wildcard</strong>
+      ${roster.wildcard ? roster.wildcard.map(team => `
+        <li class="${team.sport}">
+          <div class="team-icon ${team.sport}" style="--primaryColor: ${team.primaryColor}; --secondaryColor: ${team.secondaryColor};">
+            ${getSportIcon(team)}
+          </div>
+          ${team.name} 
+          <div class="draft-pick-circle ${team.sport}">
+            ${team.round}.${team.pick}
+          </div>
+        </li>
+      `).join("") : '<li class="empty">Empty</li>'}
+    `;
+  };
+
+  renderRoster(playerRosters[1], player1Teams);
+  renderRoster(playerRosters[2], player2Teams);
+};
+
+// Update My Team Box
+const updateMyTeamBox = (team) => {
+  if (currentPlayer !== 1) return; // Only update for Player 1
+
+  // Find the sport container using data attributes for reliability
+  const sportContainer = document.querySelector(`.sport-slot[data-sport="${team.sport}"]`);
+  const wildcardContainer = document.querySelector(`.sport-slot[data-sport="Wildcard"]`);
+  const container = currentRound <= 12 ? sportContainer : wildcardContainer;
+
+  if (!container) return;
+
+  // Find the first empty slot
+  const emptySlot = container.querySelector('.slot:not(.filled)');
+  if (!emptySlot) return;
+
+  // Create team icon element
+  const teamIcon = document.createElement('div');
+  teamIcon.className = `team-icon ${team.sport}`;
+  teamIcon.style.setProperty('--primaryColor', team.primaryColor);
+  teamIcon.style.setProperty('--secondaryColor', team.secondaryColor);
+  teamIcon.innerHTML = getSportIcon(team);
+
+  // Replace empty slot content
+  emptySlot.innerHTML = '';
+  emptySlot.classList.add('filled');
+  emptySlot.appendChild(teamIcon);
+};
+
+// Toggle "My Team" box collapse/expand
+const toggleMyTeam = () => {
+  const myTeamBox = document.getElementById("myTeamBox");
+  myTeamBox.classList.toggle("collapsed");
+};
+
+// End the draft
+const endDraft = () => {
+  clearInterval(countdownInterval);
+  alert("Draft Complete! Click OK to view results.");
+
+  // Remove UI elements related to the draft
+  document.getElementById("sidebar").remove();
+  document.querySelector(".sidebar-toggle").remove();
+  document.querySelector(".draft-header").remove();
+  document.querySelector(".countdown-clock").remove();
+  document.querySelector(".draft-status-bar").remove(); // Remove progress bar
+  document.querySelector(".team-popup").remove(); // Remove popups 
+  document.querySelector(".team-list").remove(); // Remove popups 
+
+
+
+  // Remove the My Team Box and toggle button
+  const myTeamBox = document.getElementById("myTeamBox");
+  if (myTeamBox) myTeamBox.remove();
+
+  const toggleMyTeamButton = document.getElementById("toggleMyTeam");
+  if (toggleMyTeamButton) toggleMyTeamButton.remove();
+
+  // Adjust main content width to be centered
+  const mainContent = document.querySelector(".main-content");
+  mainContent.style.marginLeft = "auto";
+  mainContent.style.marginRight = "auto";
+  mainContent.style.maxWidth = "800px";
+
+  // Build roster HTML for a player
+  const rosterHTML = (player) => {
+    const roster = playerRosters[player];
+    return `
+      <div class="roster" style="width: 350px;">
+        <h2>Player ${player} Roster</h2>
+        <ul>
+          ${['NFL', 'NBA', 'MLB', 'NHL', 'NCAAF', 'NCAAB'].map(sport => `
+            <strong>${sport}</strong>
+            ${roster[sport].map(team => `
+              <li class="${team.sport}">
+                <div class="team-icon ${team.sport}" style="--primaryColor: ${team.primaryColor}; --secondaryColor: ${team.secondaryColor};">
+                  ${getSportIcon(team)}
+                </div>
+                ${team.name}
+                <div class="draft-pick-circle ${team.sport}">
+                  ${team.round}.${team.pick}
+                </div>
+              </li>
+            `).join('')}
+            ${Array(2 - roster[sport].length).fill('<li class="empty">Empty</li>').join('')}
+          `).join('')}
+          <strong>Wildcard</strong>
+          ${roster.wildcard ? roster.wildcard.map(team => `
+            <li class="${team.sport}">
+              <div class="team-icon ${team.sport}" style="--primaryColor: ${team.primaryColor}; --secondaryColor: ${team.secondaryColor};">
+                ${getSportIcon(team)}
+              </div>
+              ${team.name}
+              <div class="draft-pick-circle ${team.sport}">
+                ${team.round}.${team.pick}
+              </div>
+            </li>
+          `).join('') : '<li class="empty">Empty</li>'}
+        </ul>
+      </div>
+    `;
+  };
+
+  // Update app content
+  document.getElementById("app").innerHTML = `
+    <div class="draft-complete" style="padding: 20px;">
+      <h2 style="text-align: center; margin-bottom: 30px;">
+        Draft Complete! Here are your league's final rosters below:
+      </h2>
+      <div class="final-rosters" style="
+        display: flex;
+        justify-content: center;
+        gap: 25px;
+      ">
+        ${rosterHTML(1)}
+        ${rosterHTML(2)}
+      </div>
+    </div>
+  `;
+};
+
+
+// Initial render
+renderTeams();
+switchRoster('player1');
+seasonFilter.addEventListener("change", renderTeams);
+renderRosters();
+startCountdown();
+  
+</script>
+</body>
+</html>
