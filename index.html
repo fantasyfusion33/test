@@ -1,1 +1,28 @@
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fantasy Fusion Draft</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="src/supabase.js"></script>
+  <script src="src/utils.js"></script>
+  <script src="src/manager.js"></script>
+</head>
+<body>
+  <div id="app">
+    <h1>Create a League</h1>
+    <form id="create-league">
+      <label for="league-name">League Name:</label>
+      <input type="text" id="league-name" required>
+      <label for="num-players">Number of Players (4–12):</label>
+      <input type="number" id="num-players" min="4" max="12" required>
+      <button type="submit">Create League</button>
+    </form>
+    <div id="invite-links" style="display: none;">
+      <h2>Invite Links</h2>
+      <ul id="links"></ul>
+    </div>
+  </div>
+</body>
+</html>
