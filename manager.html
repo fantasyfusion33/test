@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fantasy Fusion Draft - League Manager</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="manager.js"></script>
+</head>
+<body>
+  <div id="app">
+    <h1>Fantasy Fusion Draft - League Manager</h1>
+    <div id="controls">
+      <button onclick="pauseDraft()">Pause</button>
+      <button onclick="startDraft()">Start</button>
+      <button onclick="redoPick()">Redo Pick</button>
+      <button onclick="overridePick()">Override Pick</button>
+    </div>
+    <div id="draft-state">
+      <h2>Draft State</h2>
+      <div id="current-pick"></div>
+      <div id="player-rosters"></div>
+    </div>
+  </div>
+</body>
+</html>
